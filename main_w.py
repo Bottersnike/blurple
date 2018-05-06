@@ -59,13 +59,22 @@ def dynamic_filter(in_file, nh, out_file, rad_div, sigma=None, save_gaussian=Fal
         sigma = int((len(gs) * len(gs[0])) / RAD_DIV)
     gaussian = ndimage.filters.gaussian_filter(gs, sigma=sigma)
 
-    new_img = 1 - (gs > gaussian) * 1
-    new_img = new_img.astype(int)
-    new_img = np.dstack((new_img, new_img, new_img)) * (141, 118, 37)
-    new_img = 255 - new_img
+    new_img = (gs - gaussian)
+    new_img = new_img / (np.amax(new_img) + 1)
+    ni = new_img.astype(int)
+    ni = np.dstack((ni, ni, ni))
+    ni[new_img > 0.3] = (255, 255, 255)
+    ni[new_img <= 0.3] = (114, 137, 218)
+    ni[-0.3 > new_img] = (78, 93, 148)
+
+
+    # new_img = 1 - (gs > gaussian) * 1
+    # new_img = new_img.astype(int)
+    # new_img = np.dstack((new_img, new_img, new_img)) * (141, 118, 37)
+    # new_img = 255 - new_img
     del gs
     
-    im = Image.fromarray(np.uint8(new_img))
+    im = Image.fromarray(np.uint8(ni))
     im.save(out_file, format='PNG')
     out_file.seek(0)
     
