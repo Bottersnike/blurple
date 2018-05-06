@@ -46,7 +46,7 @@ class App(flask.Flask):
             response.headers["Expires"] = "0"
             response.headers['Cache-Control'] = 'public, max-age=0'
             return response
-        return flask.redirect('/')
+        return self.index()
 
         
 

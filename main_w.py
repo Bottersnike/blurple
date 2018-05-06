@@ -2,7 +2,6 @@
 from scipy import ndimage
 import numpy as np
 import argparse
-import pygame
 import time
 import sys
 import os
