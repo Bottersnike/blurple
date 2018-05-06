@@ -18,8 +18,8 @@ class App(flask.Flask):
     def __init__(self, name):
         super().__init__(name)
 
-        self.route('/')(self.index)
-        self.route('/blurple', methods=['POST', 'GET'])(self.blurple)
+        self.route('/blurple')(self.index)
+        self.route('/blurple/blurple', methods=['POST', 'GET'])(self.blurple)
 
     def index(self):
         with open('index.html') as f:
