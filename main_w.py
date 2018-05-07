@@ -74,10 +74,11 @@ def filter(in_file, nh, out_file, args, depth=0):
         try:
             img.info['version']
             is_gif = True
-            git_loop = int(img.info['loop'])
+            gif_loop = int(img.info.get('loop', 0))
+            gif_duration = img.info.get('duration')
         except Exception:
             is_gif = False
-            gif_loop = None
+            gif_loop = gif_duration = None
 
         if is_gif:
             frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
@@ -85,7 +86,7 @@ def filter(in_file, nh, out_file, args, depth=0):
                 gs = np.mean(np.asarray(frame.convert('RGB')), axis=2)
                 frames[n] = dynamic_filter(gs, args.sigma)
 
-            frames[0].save(out_file, format='gif', save_all=True, append_images=frames[1:], loop=0)
+            frames[0].save(out_file, format='gif', duration=gif_duration, save_all=True, append_images=frames[1:], loop=gif_loop)
         else:
             gs = np.mean(np.asarray(img.convert('RGB')), axis=2)
             dynamic_filter(gs, args.sigma).save(out_file, format='png')
