@@ -58,10 +58,11 @@ def dynamic_filter(gs, full=False, sigma=None): #, out_file, rad_div, sigma=None
     palette = [(255, 255, 255), (114, 137, 218), (78, 93, 148)]
     if full:
         palette = [(255, 255, 255), (235, 238, 250), (208, 216, 243), (181, 193, 236), (154, 171, 229), (127, 148, 222), (114, 137, 218), (78, 93, 148)]
-    step = 2 / len(palette)
+    step = 2 / (len(palette) - 1)
 
-    for n, c in enumerate(palette[::-1]):
-        ni[new_img > n * step - 1] = c
+    for n, c in enumerate(palette):
+        ni[new_img < (len(palette) - n - 1) * step - 1] = c#(255 - c[0], 255 - c[1], 255 - c[2])
+    #ni = 255 - ni
 
     #ni[new_img > 0.3] = (255, 255, 255)
     #ni[new_img <= 0.3] = (114, 137, 218)
