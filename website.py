@@ -18,6 +18,7 @@ class App(flask.Flask):
     def __init__(self, name):
         super().__init__(name)
 
+        self.route('/blurple/index.css')(self.css)
         self.route('/blurple')(self.index)
         self.route('/blurple/blurple', methods=['POST', 'GET'])(self.blurple)
 
@@ -26,20 +27,32 @@ class App(flask.Flask):
             dat = f.read()
 
         return dat
+
+    def css(self):
+        return flask.send_file('index.css')
     
     def blurple(self):
         if request.method == 'POST':
             if 'file' not in request.files:
-                return 'No file selected'
+                with open('result.html') as f:
+                    dat = f.read()
+                return dat.replace('{{body}}', '<h2>Error:</h2><p>No file selected</p>')
             file_ = request.files['file']
             if file_.filename == '':
-                return 'No file selected'
+                with open('result.html') as f:
+                    dat = f.read()
+                return dat.replace('{{body}}', '<h2>Error:</h2><p>No file selected</p>')
       
             i_file = io.BytesIO()
             i_file.write(file_.read())
             o_file = io.BytesIO()
 
-            main.filter(i_file, file_.filename, o_file, A)
+            try:
+                main.filter(i_file, file_.filename, o_file, A)
+            except (ValueError, OSError):
+                with open('result.html') as f:
+                    dat = f.read()
+                return dat.replace('{{body}}', '<h2>Error:</h2><p>Invalid image selected</p>')
 
             response = flask.make_response(flask.send_file(o_file, as_attachment=False, attachment_filename=file_.filename))
             response.headers["Pragma"] = "no-cache"
@@ -48,7 +61,6 @@ class App(flask.Flask):
             return response
         return self.index()
 
-        
 
 if __name__ == '__main__':
     App(__name__).run(host='0.0.0.0', port=2053, debug=True, threaded=True)

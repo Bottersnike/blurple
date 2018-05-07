@@ -4,16 +4,43 @@
         <title>Blurple!</title>
         <meta property="og:title" content="Blurplify"/>
         <meta property="og:description" content="Make any image of your choice blurple using an advanced processing algorithm. Message me for higher-resolution copies."/>
+
+        <link href="https://fonts.googleapis.com/css?family=Raleway:300,400,500,600" rel="stylesheet">
+        <link type="text/css" rel="stylesheet" href="/blurple/index.css"/>
     </head>
 
     <body>
-        <div style="text-align: center">
-            <p>Get blurpled!</p>
+        <div>
+            <h2>Burplefication</h2>
             <form action="/blurple/blurple" method="post" enctype="multipart/form-data">
-                <input type="file" name="file">
-                <input type="submit" value="Let's-a go!">
+                <input type="file" name="file" id="file" style="display:none" class="inputfile">
+                <label for="file">Select a file</label>
+                <input type="submit" value="Make me blurple!">
             </form>
         </div>
+
+        <script type="text/javascript">
+            var inputs = document.querySelectorAll( '.inputfile' );
+            Array.prototype.forEach.call( inputs, function( input )
+            {
+	            var label	 = input.nextElementSibling,
+		            labelVal = label.innerHTML;
+
+	            input.addEventListener( 'change', function( e )
+	            {
+		            var fileName = '';
+		            if( this.files && this.files.length > 1 )
+			            fileName = ( this.getAttribute( 'data-multiple-caption' ) || '' ).replace( '{count}', this.files.length );
+		            else
+			            fileName = e.target.value.split( '\\' ).pop();
+
+		            if( fileName )
+			            label.innerHTML = fileName + ' selected';
+		            else
+			            label.innerHTML = labelVal;
+	            });
+            });
+        </script>
     </body>
 </html>
 
