@@ -6,7 +6,7 @@ import time
 import sys
 import os
 
-from PIL import Image, ImageSequence
+from PIL import Image, ImageSequence, ImageEnhance
 
 MIN_T = 130
 MAX_T = 240
@@ -46,6 +46,7 @@ def basic_filter(in_file, out_file, min_t, max_t, thresh=None, gs=None):
 
 
 def dynamic_filter(gs, sigma=None): #, out_file, rad_div, sigma=None, save_gaussian=False, gs=None):
+
     sigma = sigma or int((len(gs) * len(gs[0])) / RAD_DIV)
     gaussian = ndimage.filters.gaussian_filter(gs, sigma=sigma)
 
@@ -83,12 +84,18 @@ def filter(in_file, nh, out_file, args, depth=0):
         if is_gif:
             frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
             for n, frame in enumerate(frames):
-                gs = np.mean(np.asarray(frame.convert('RGB')), axis=2)
+                frame = ImageEnhance.Sharpness(frame.convert('RGB')).enhance(2)
+                frame = ImageEnhance.Contrast(frame).enhance(2)
+
+                gs = np.mean(np.asarray(frame), axis=2)
                 frames[n] = dynamic_filter(gs, args.sigma)
 
             frames[0].save(out_file, format='gif', duration=gif_duration, save_all=True, append_images=frames[1:], loop=gif_loop)
         else:
-            gs = np.mean(np.asarray(img.convert('RGB')), axis=2)
+            img = ImageEnhance.Sharpness(img.convert('RGB')).enhance(2)
+            img = ImageEnhance.Contrast(img).enhance(2)
+
+            gs = np.mean(np.asarray(img), axis=2)
             dynamic_filter(gs, args.sigma).save(out_file, format='png')
 
         out_file.seek(0)

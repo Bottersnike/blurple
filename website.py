@@ -49,7 +49,7 @@ class App(flask.Flask):
 
             try:
                 main.filter(i_file, file_.filename, o_file, A)
-            except (ValueError, OSError):
+            except (ValueError, OSError) as e:
                 with open('result.html') as f:
                     dat = f.read()
                 return dat.replace('{{body}}', '<h2>Error:</h2><p>Invalid image selected</p>')
