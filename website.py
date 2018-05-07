@@ -43,12 +43,14 @@ class App(flask.Flask):
                     dat = f.read()
                 return dat.replace('{{body}}', '<h2>Error:</h2><p>No file selected</p>')
       
+            full = request.form.get('button') == 'Full-colour'
+
             i_file = io.BytesIO()
             i_file.write(file_.read())
             o_file = io.BytesIO()
 
             try:
-                main.filter(i_file, file_.filename, o_file, A)
+                main.filter(i_file, file_.filename, o_file, A, full)
             except (ValueError, OSError) as e:
                 with open('result.html') as f:
                     dat = f.read()

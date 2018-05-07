@@ -45,7 +45,7 @@ def basic_filter(in_file, out_file, min_t, max_t, thresh=None, gs=None):
     del new_img, surf
 
 
-def dynamic_filter(gs, sigma=None): #, out_file, rad_div, sigma=None, save_gaussian=False, gs=None):
+def dynamic_filter(gs, full=False, sigma=None): #, out_file, rad_div, sigma=None, save_gaussian=False, gs=None):
 
     sigma = sigma or int((len(gs) * len(gs[0])) / RAD_DIV)
     gaussian = ndimage.filters.gaussian_filter(gs, sigma=sigma)
@@ -54,14 +54,23 @@ def dynamic_filter(gs, sigma=None): #, out_file, rad_div, sigma=None, save_gauss
     new_img = new_img / (np.amax(new_img) + 1)
     ni = new_img.astype(int)
     ni = np.dstack((ni, ni, ni))
-    ni[new_img > 0.3] = (255, 255, 255)
-    ni[new_img <= 0.3] = (114, 137, 218)
-    ni[-0.3 > new_img] = (78, 93, 148)
+
+    palette = [(255, 255, 255), (114, 137, 218), (78, 93, 148)]
+    if full:
+        palette = [(255, 255, 255), (235, 238, 250), (208, 216, 243), (181, 193, 236), (154, 171, 229), (127, 148, 222), (114, 137, 218), (78, 93, 148)]
+    step = 2 / len(palette)
+
+    for n, c in enumerate(palette[::-1]):
+        ni[new_img > n * step - 1] = c
+
+    #ni[new_img > 0.3] = (255, 255, 255)
+    #ni[new_img <= 0.3] = (114, 137, 218)
+    #ni[-0.3 > new_img] = (78, 93, 148)
 
     return Image.fromarray(np.uint8(ni))
 
 
-def filter(in_file, nh, out_file, args, depth=0):
+def filter(in_file, nh, out_file, args, full=False, depth=0):
     in_file.seek(0)
 
     img = Image.open(in_file)
@@ -88,7 +97,7 @@ def filter(in_file, nh, out_file, args, depth=0):
                 frame = ImageEnhance.Contrast(frame).enhance(2)
 
                 gs = np.mean(np.asarray(frame), axis=2)
-                frames[n] = dynamic_filter(gs, args.sigma)
+                frames[n] = dynamic_filter(gs, full, args.sigma)
 
             for n, frame in enumerate(frames):
                 frames[n] = frame.quantize()
@@ -99,7 +108,7 @@ def filter(in_file, nh, out_file, args, depth=0):
             img = ImageEnhance.Contrast(img).enhance(2)
 
             gs = np.mean(np.asarray(img), axis=2)
-            dynamic_filter(gs, args.sigma).save(out_file, format='png')
+            dynamic_filter(gs, full, args.sigma).save(out_file, format='png')
 
         out_file.seek(0)
 
