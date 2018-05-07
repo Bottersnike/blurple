@@ -84,15 +84,18 @@ def filter(in_file, nh, out_file, args, depth=0):
         if is_gif:
             frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
             for n, frame in enumerate(frames):
-                frame = ImageEnhance.Sharpness(frame.convert('RGB')).enhance(2)
+                frame = ImageEnhance.Sharpness(frame.convert('RGB')).enhance(1)
                 frame = ImageEnhance.Contrast(frame).enhance(2)
 
                 gs = np.mean(np.asarray(frame), axis=2)
                 frames[n] = dynamic_filter(gs, args.sigma)
 
+            for n, frame in enumerate(frames):
+                frames[n] = frame.quantize()
+
             frames[0].save(out_file, format='gif', duration=gif_duration, save_all=True, append_images=frames[1:], loop=gif_loop)
         else:
-            img = ImageEnhance.Sharpness(img.convert('RGB')).enhance(2)
+            img = ImageEnhance.Sharpness(img.convert('RGB')).enhance(1)
             img = ImageEnhance.Contrast(img).enhance(2)
 
             gs = np.mean(np.asarray(img), axis=2)
