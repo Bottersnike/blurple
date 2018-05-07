@@ -6,7 +6,7 @@ import time
 import sys
 import os
 
-from PIL import Image
+from PIL import Image, ImageSequence
 
 MIN_T = 130
 MAX_T = 240
@@ -45,18 +45,8 @@ def basic_filter(in_file, out_file, min_t, max_t, thresh=None, gs=None):
     del new_img, surf
 
 
-def dynamic_filter(in_file, nh, out_file, rad_div, sigma=None, save_gaussian=False, gs=None):
-    if gs is None:
-        in_file.seek(0)
-        img = pygame.image.load(in_file, nh)
-
-        arr = pygame.surfarray.array3d(img)
-        del img
-        gs = np.mean(arr, axis=2)
-        del arr
-
-    if sigma is None:
-        sigma = int((len(gs) * len(gs[0])) / RAD_DIV)
+def dynamic_filter(gs, sigma=None): #, out_file, rad_div, sigma=None, save_gaussian=False, gs=None):
+    sigma = sigma or int((len(gs) * len(gs[0])) / RAD_DIV)
     gaussian = ndimage.filters.gaussian_filter(gs, sigma=sigma)
 
     new_img = (gs - gaussian)
@@ -67,24 +57,7 @@ def dynamic_filter(in_file, nh, out_file, rad_div, sigma=None, save_gaussian=Fal
     ni[new_img <= 0.3] = (114, 137, 218)
     ni[-0.3 > new_img] = (78, 93, 148)
 
-
-    # new_img = 1 - (gs > gaussian) * 1
-    # new_img = new_img.astype(int)
-    # new_img = np.dstack((new_img, new_img, new_img)) * (141, 118, 37)
-    # new_img = 255 - new_img
-    del gs
-    
-    im = Image.fromarray(np.uint8(ni))
-    im.save(out_file, format='PNG')
-    out_file.seek(0)
-    
-    del new_img
-
-    if save_gaussian:
-        surf = pygame.surfarray.make_surface(gaussian)
-        pygame.image.save(surf, out_file + '-gaussian.png')
-        del surf
-    del gaussian
+    return Image.fromarray(np.uint8(ni))
 
 
 def filter(in_file, nh, out_file, args, depth=0):
@@ -93,25 +66,31 @@ def filter(in_file, nh, out_file, args, depth=0):
     img = Image.open(in_file)
     if img.size[0] * img.size[1] > 1280 * 720:
         img.thumbnail((1280, 720), Image.ANTIALIAS)
-    arr = np.asarray(img)
-    gs = np.mean(arr, axis=2)
 
     if args.basic_filter:
+        gs = np.mean(np.asarray(img), axis=2)
         basic_filter(in_file, out_file, args.min_thresh, args.max_thresh, args.threshold, gs)
     else:
-        dynamic_filter(in_file, nh, out_file, args.radius_div, args.sigma, args.save_gaussian, gs)
+        try:
+            img.info['version']
+            is_gif = True
+            git_loop = int(img.info['loop'])
+        except Exception:
+            is_gif = False
+            gif_loop = None
 
-    if args.save_greyscale:
-        repeated = np.repeat(gs, 3, axis=1)
-        greyscale = np.reshape(repeated, (len(gs), len(gs[0]), 3))
-        del repeated, gs
+        if is_gif:
+            frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
+            for n, frame in enumerate(frames):
+                gs = np.mean(np.asarray(frame.convert('RGB')), axis=2)
+                frames[n] = dynamic_filter(gs, args.sigma)
 
-        surf = pygame.surfarray.make_surface(greyscale)
-        del greyscale
-        pygame.image.save(surf, out_file + '-greyscale.png')
-        del surf
-    else:
-        del gs
+            frames[0].save(out_file, format='gif', save_all=True, append_images=frames[1:], loop=0)
+        else:
+            gs = np.mean(np.asarray(img.convert('RGB')), axis=2)
+            dynamic_filter(gs, args.sigma).save(out_file, format='png')
+
+        out_file.seek(0)
 
     sys.stdout.write(' [Done]\n')
     sys.stdout.flush()
