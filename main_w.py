@@ -75,6 +75,10 @@ def filter(in_file, nh, out_file, args, full=False, depth=0):
     in_file.seek(0)
 
     img = Image.open(in_file)
+
+    if img.size[0] * img.size[1] > 3840 * 2160:
+        return
+
     if img.size[0] * img.size[1] > 1280 * 720:
         img.thumbnail((1280, 720), Image.ANTIALIAS)
 
