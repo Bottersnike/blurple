@@ -76,9 +76,6 @@ def filter(in_file, nh, out_file, args, full=False, depth=0):
 
     img = Image.open(in_file)
 
-    if img.size[0] * img.size[1] > 3840 * 2160:
-        return
-
     if img.size[0] * img.size[1] > 1280 * 720:
         img.thumbnail((1280, 720), Image.ANTIALIAS)
 
@@ -98,6 +95,7 @@ def filter(in_file, nh, out_file, args, full=False, depth=0):
         if is_gif:
             frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
             for n, frame in enumerate(frames):
+                #frame = frame.convert('RBG')
                 frame = ImageEnhance.Sharpness(frame.convert('RGB')).enhance(1)
                 frame = ImageEnhance.Contrast(frame).enhance(2)
 
@@ -109,6 +107,7 @@ def filter(in_file, nh, out_file, args, full=False, depth=0):
 
             frames[0].save(out_file, format='gif', duration=gif_duration, save_all=True, append_images=frames[1:], loop=gif_loop)
         else:
+            #img = img.convert('RGB')
             img = ImageEnhance.Sharpness(img.convert('RGB')).enhance(1)
             img = ImageEnhance.Contrast(img).enhance(2)
 
