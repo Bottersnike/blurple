@@ -50,12 +50,12 @@ class App(flask.Flask):
             i_file.write(file_.read())
             o_file = io.BytesIO()
 
-            try:
-                main.filter(i_file, file_.filename, o_file, A, full)
-            except (ValueError, OSError) as e:
-                with open('result.html') as f:
-                    dat = f.read()
-                return dat.replace('{{body}}', '<h2>Error:</h2><p>Invalid image selected</p>')
+            #try:
+            main.filter(i_file, file_.filename, o_file, A, full)
+            #except (ValueError, OSError) as e:
+            #    with open('result.html') as f:
+            #        dat = f.read()
+            #    return dat.replace('{{body}}', '<h2>Error:</h2><p>Invalid image selected</p>')
 
             response = flask.make_response(flask.send_file(o_file, as_attachment=False, attachment_filename=file_.filename))
             response.headers["Pragma"] = "no-cache"

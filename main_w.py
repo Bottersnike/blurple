@@ -6,7 +6,7 @@ import time
 import sys
 import os
 
-from PIL import Image, ImageSequence, ImageEnhance
+from PIL import Image, ImageSequence, ImageEnhance, ImageOps
 
 MIN_T = 130
 MAX_T = 240
@@ -46,7 +46,6 @@ def basic_filter(in_file, out_file, min_t, max_t, thresh=None, gs=None):
 
 
 def dynamic_filter(gs, full=False, sigma=None): #, out_file, rad_div, sigma=None, save_gaussian=False, gs=None):
-
     sigma = sigma or int((len(gs) * len(gs[0])) / RAD_DIV)
     gaussian = ndimage.filters.gaussian_filter(gs, sigma=sigma)
 
@@ -67,6 +66,29 @@ def dynamic_filter(gs, full=False, sigma=None): #, out_file, rad_div, sigma=None
     #ni[new_img > 0.3] = (255, 255, 255)
     #ni[new_img <= 0.3] = (114, 137, 218)
     #ni[-0.3 > new_img] = (78, 93, 148)
+
+    return Image.fromarray(np.uint8(ni))
+
+
+def normalized_filter(im, full=False):
+    na = im.convert('RGB')
+    fc = np.asarray(im)
+    na = ImageOps.autocontrast(na)
+    gs = np.mean(np.asarray(na), axis=2)
+
+    ni = gs.astype(int)
+    ni = np.dstack((ni, ni, ni, ni))
+
+    palette = [(255, 255, 255), (114, 137, 218), (114, 137, 218), (78, 93, 148), (78, 93, 148)]
+    if full:
+        palette = [(255, 255, 255), (235, 238, 250), (208, 216, 243), (181, 193, 236), (154, 171, 229), (127, 148, 222), (114, 137, 218), (78, 93, 148)]
+    step = 255 / len(palette)
+
+    for n, c in enumerate(palette[::-1]):
+        ni[gs >= (n) * step] = (c[0], c[1], c[2], 255)
+    #print(fc)
+    #print(np.max(fc * (0, 0, 0, 1), axis=2))
+    ni[np.max(fc * (0, 0, 0, 1), axis=2) < 254] = (255, 0, 255, 0) 
 
     return Image.fromarray(np.uint8(ni))
 
@@ -92,27 +114,35 @@ def filter(in_file, nh, out_file, args, full=False, depth=0):
             is_gif = False
             gif_loop = gif_duration = None
 
+        frames = []
+        for frame in ImageSequence.Iterator(img):
+            frames.append(frame.copy())
+
+        for n, frame in enumerate(frames):
+            #frame = frame.convert('RBG')
+            #frame = ImageEnhance.Sharpness(frame.convert('RGB')).enhance(1)
+            #frame = ImageEnhance.Contrast(frame).enhance(2)
+
+            #gs = np.mean(np.asarray(frame), axis=2)
+            #frames[n] = dynamic_filter(gs, full, args.sigma)
+            frame = frame.convert('RGBA')
+            frames[n] = normalized_filter(frame, full)
+
+        for n, frame in enumerate(frames):
+            frames[n] = frame.quantize()
+
         if is_gif:
-            frames = [frame.copy() for frame in ImageSequence.Iterator(img)]
-            for n, frame in enumerate(frames):
-                #frame = frame.convert('RBG')
-                frame = ImageEnhance.Sharpness(frame.convert('RGB')).enhance(1)
-                frame = ImageEnhance.Contrast(frame).enhance(2)
-
-                gs = np.mean(np.asarray(frame), axis=2)
-                frames[n] = dynamic_filter(gs, full, args.sigma)
-
-            for n, frame in enumerate(frames):
-                frames[n] = frame.quantize()
-
             frames[0].save(out_file, format='gif', duration=gif_duration, save_all=True, append_images=frames[1:], loop=gif_loop)
         else:
-            #img = img.convert('RGB')
-            img = ImageEnhance.Sharpness(img.convert('RGB')).enhance(1)
-            img = ImageEnhance.Contrast(img).enhance(2)
+            frames[0].save(out_file, format='png')
+        #else:
+        #    img = img.convert('RGBA')
+            #img = ImageEnhance.Sharpness(img.convert('RGB')).enhance(1)
+            #img = ImageEnhance.Contrast(img).enhance(2)
 
-            gs = np.mean(np.asarray(img), axis=2)
-            dynamic_filter(gs, full, args.sigma).save(out_file, format='png')
+            #gs = np.mean(np.asarray(img), axis=2)
+        #    normalized_filter(img, full).save(out_file, format='png')
+            #dynamic_filter(gs, full, args.sigma).save(out_file, format='png')
 
         out_file.seek(0)
 
